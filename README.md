@@ -16,7 +16,7 @@ This is a Bookkeeping React application.
 
 1. Clone the repository:
    ```
-   git clone <repository-url>
+   git clone https://github.com/rbbincn/Bookkeeping-React-Web-App.git
    ```
 
 2. Navigate to the project directory:
