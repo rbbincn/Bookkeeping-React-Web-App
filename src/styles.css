@@ -1,0 +1,10 @@
+body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin: 0; padding: 16px; background: #f7f7f8; }
+.container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.05); }
+table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+th, td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left; }
+.form-row { display:flex; gap:8px; margin-bottom:8px; }
+input, select, button, textarea { padding:8px; border:1px solid #ddd; border-radius:6px; }
+.pagination { display:flex; gap:6px; margin-top:12px; }
+.page-btn { padding:6px 10px; border-radius:6px; border:1px solid #ccc; background: transparent; cursor:pointer; }
+.page-btn.active { background:#111; color:#fff; }
+.summary { margin-top:12px; font-weight:600; }
