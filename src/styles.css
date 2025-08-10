@@ -9,8 +9,7 @@
 body {
     margin: 0;
     background: #f6f7fb;
-    color: #222;
-}
+    color: #222;}
 
 header {
     background: white;
@@ -50,7 +49,6 @@ label {
     gap: .75rem;
     align-items: center;
     flex-wrap: wrap;
-    margin-bottom: 10px;
 }
 
 .btn {

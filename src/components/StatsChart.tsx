@@ -1,6 +1,6 @@
-import { Bar } from 'react-chartjs-2'
-import { Chart, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js'
-import { Tx } from '../features/transactions/transactionsSlice'
+import { Bar } from 'react-chartjs-2';
+import { Chart, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from 'chart.js';
+import { Tx } from '../features/transactions/transactionsSlice';
 
 Chart.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
 

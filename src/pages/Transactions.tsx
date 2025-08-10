@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState } from '../store';
 import {
@@ -24,6 +24,8 @@ export default function Transactions() {
   const total = useSelector(selectTotalCount);
   const { page, pageSize, errorPage } = useSelector((s: RootState) => s.transactions);
   const filters = useSelector(selectFilters);
+  // track which row is being edited (null = add mode)
+  const [editing, setEditing] = useState<Tx | null>(null);
 
   // initial page load
   useEffect(() => { dispatch(fetchPage()); }, [dispatch]);
@@ -38,8 +40,21 @@ export default function Transactions() {
     <div className="grid" style={{ gridTemplateColumns: '1fr', gap: '1rem' }}>
       <UnifiedFilter refreshPage refreshFull />
       <div className="card">
-        <h3>Add Transaction</h3>
-        <TransactionForm onSubmit={(tx) => dispatch(createTransaction(tx))} />
+        <h3>{editing ? 'Edit Transaction' : 'Add Transaction'}</h3>
+
+        <TransactionForm
+          initial={editing ?? {}}
+          submitLabel={editing ? 'Save' : 'Add'}
+          onSubmit={(data) => {
+            if (editing) {
+              // update with all editable fields, then exit edit mode
+              dispatch(updateTransaction({ id: editing.id, patch: data }))
+                .then(() => setEditing(null));
+            } else {
+              dispatch(createTransaction(data));
+            }
+          }}
+        />
       </div>
       {errorPage && <div style={{ color: '#ef4444' }}>Error: {errorPage}</div>}
       <TransactionTable
@@ -48,7 +63,8 @@ export default function Transactions() {
         pageSize={pageSize}
         total={total}
         onPageChange={(p) => { dispatch(setPage(p)); dispatch(fetchPage()); }}
-        onEdit={(tx) => dispatch(updateTransaction({ id: tx.id, patch: { amount: tx.amount, notes: tx.notes } }))}
+        onEdit={(tx) => setEditing(tx)}  
+        //onEdit={(tx) => dispatch(updateTransaction({ id: tx.id, patch: { amount: tx.amount, notes: tx.notes } }))}
         onDelete={(id) => dispatch(deleteTransaction(id))}
       />
     </div>

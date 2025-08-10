@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import DatePicker from './DatePicker';
 import { isNumeric } from '../utils/validation'
 import { CATEGORY_OPTIONS } from '../constants.ts'
 
@@ -12,14 +13,24 @@ function toLocalISODate(d: Date) {
 type Props = {
   onSubmit: (data: { date: string, type: 'Income' | 'Expense', category: string, amount: number, notes?: string }) => void
   initial?: Partial<{ date: string, type: 'Income' | 'Expense', category: string, amount: number, notes?: string }>
+  submitLabel?: string
 }
-export default function TransactionForm({ onSubmit, initial = {}}: Props) {
+export default function TransactionForm({ onSubmit, initial = {}, submitLabel = 'Add' }: Props) {
   const [date, setDate] = useState(initial.date || toLocalISODate(new Date()))
   const [type, setType] = useState<'Income' | 'Expense'>(initial.type || 'Expense')
   const [category, setCategory] = useState(initial.category || 'Food')
   const [amount, setAmount] = useState(String(initial.amount ?? ''))
   const [notes, setNotes] = useState(initial.notes || '')
   const [err, setErr] = useState<string | undefined>()
+
+  useEffect(() => {
+    setDate(initial.date || toLocalISODate(new Date()));
+    setType((initial.type as any) || 'Expense');
+    setCategory(initial.category || 'Food');
+    setAmount(initial.amount !== undefined ? String(initial.amount) : '');
+    setNotes(initial.notes || '');
+    setErr(undefined);
+  }, [initial]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -31,6 +42,7 @@ export default function TransactionForm({ onSubmit, initial = {}}: Props) {
 
   return (
     <form className="grid" onSubmit={submit} style={{ gridTemplateColumns: 'repeat(6,1fr)', alignItems: 'end' }}>
+      <DatePicker value={date} onChange={setDate} />
       <div>
         <label style={{ display: 'block', fontSize: 12, color: '#475569' }}>Type</label>
         <select value={type} onChange={e => setType(e.target.value as any)}>
@@ -46,14 +58,14 @@ export default function TransactionForm({ onSubmit, initial = {}}: Props) {
       </div>
       <div>
         <label style={{ display: 'block', fontSize: 12, color: '#475569' }}>Amount</label>
-        <input type='number' value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
+        <input value={amount} type='number' onChange={e => setAmount(e.target.value)} placeholder="0.00" />
       </div>
       <div>
         <label style={{ display: 'block', fontSize: 12, color: '#475569' }}>Notes</label>
         <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional" />
       </div>
       <div>
-        <button className="btn" type="submit">Add</button>
+        <button className="btn" type="submit">{submitLabel}</button>
         {err && <div style={{ color: '#ef4444', marginTop: 6 }}>{err}</div>}
       </div>
     </form>

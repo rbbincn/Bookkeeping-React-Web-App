@@ -5,6 +5,7 @@
 // - Always returned in DESC (newest-first) order
 
 import { v4 as uuidv4 } from 'uuid';
+import {CATEGORY_OPTIONS} from '../constants.ts'
 
 export type Tx = {
   id: string;
@@ -22,20 +23,14 @@ export type Filters = {
   category?: string;
 };
 
-// Local categories (keep in sync with your UI options if needed)
-const CATEGORIES = [
-  'Salary', 'Food', 'Transport', 'Rent', 'Entertainment',
-  'Shopping', 'Utilities', 'Healthcare', 'Education', 'Other'
-];
-
 // Simple deterministic PRNG so tests stay stable
 function prng(seed: number) {
   let x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
 }
 function pickCategory(y: number, m: number, k: number) {
-  const idx = Math.floor(prng(y * 100 + m * 10 + k) * CATEGORIES.length);
-  return CATEGORIES[idx];
+  const idx = Math.floor(prng(y * 100 + m * 10 + k) * CATEGORY_OPTIONS.length);
+  return CATEGORY_OPTIONS[idx];
 }
 function pickAmount(y: number, m: number, k: number, type: 'Income' | 'Expense') {
   const r = prng((y + 1) * 100 + (m + 3) * 10 + (k + 7));
@@ -52,7 +47,8 @@ function pickAmount(y: number, m: number, k: number, type: 'Income' | 'Expense')
 const transactions: Tx[] = [];
 const DAYS = [26, 19, 12, 5]; // 4 per month, spaced
 for (let year = 2025; year >= 2024; year--) {
-  for (let month = 12; month >= 1; month--) {
+  const monthStart = year === 2025 ? 8 : 12; // 2025 到 8 月
+  for (let month = monthStart; month >= 1; month--) {
     for (let i = 0; i < 4; i++) {
       const day = DAYS[i];
       const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;

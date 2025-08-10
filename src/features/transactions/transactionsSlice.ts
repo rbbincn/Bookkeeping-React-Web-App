@@ -1,4 +1,3 @@
-// src/features/transactions/transactionsSlice.ts
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import * as api from '../../api/mockApi';
 
@@ -25,7 +24,7 @@ export type Totals = {
 };
 
 export type TransactionsState = {
-  // 分页列表（Transactions 页面用）
+  // for ransactions page
   pageItems: Transaction[];
   totalCount: number;
   page: number;
@@ -34,7 +33,7 @@ export type TransactionsState = {
   loadingPage: boolean;
   errorPage?: string;
 
-  // 全量数据（Dashboard 用）
+  // for dashborad
   fullItems: Transaction[] | null;
   totals: Totals;
   loadingFull: boolean;
@@ -46,7 +45,13 @@ const initialState: TransactionsState = {
   totalCount: 0,
   page: 1,
   pageSize: 10,
-  filters: {},
+  filters: {
+    mode: 'custom',
+    from: undefined,
+    to: undefined,
+    type: undefined,
+    category: undefined
+  },
 
   loadingPage: false,
   errorPage: undefined,
@@ -69,7 +74,7 @@ function computeTotals(items: Transaction[]): Totals {
 
 // --- Thunks ---
 
-// 分页数据
+// pagination
 export const fetchPage = createAsyncThunk<
   { items: Transaction[]; total: number },
   void,
@@ -83,7 +88,7 @@ export const fetchPage = createAsyncThunk<
   });
 });
 
-// 全量数据
+// all data
 export const fetchFull = createAsyncThunk<
   { items: Transaction[]; totals: Totals },
   void,
@@ -94,7 +99,7 @@ export const fetchFull = createAsyncThunk<
   return { items, totals: computeTotals(items) };
 });
 
-// 新增
+// add
 export const createTransaction = createAsyncThunk<
   void,
   Omit<Transaction, 'id'>
@@ -103,7 +108,7 @@ export const createTransaction = createAsyncThunk<
   await Promise.all([dispatch(fetchPage()), dispatch(fetchFull())]);
 });
 
-// 更新
+// edit
 export const updateTransaction = createAsyncThunk<
   void,
   { id: string; patch: Partial<Omit<Transaction, 'id'>> }
@@ -112,7 +117,7 @@ export const updateTransaction = createAsyncThunk<
   await Promise.all([dispatch(fetchPage()), dispatch(fetchFull())]);
 });
 
-// 删除
+// delete
 export const deleteTransaction = createAsyncThunk<void, string>(
   'transactions/deleteTransaction',
   async (id, { dispatch }) => {
