@@ -1,11 +1,12 @@
-import { useId, useState } from 'react';
-import { useDispatch } from 'react-redux';
+import { useEffect, useId, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   setFilters as setSliceFilters,
   fetchPage,
   fetchFull,
 } from '../features/transactions/transactionsSlice';
-import { CATEGORY_OPTIONS } from '../constants.ts'
+import type { RootState } from '../store';
+import { CATEGORY_OPTIONS } from '../constants.ts';
 
 type Mode = 'month' | 'year' | 'custom';
 type Props = { refreshPage?: boolean; refreshFull?: boolean };
@@ -15,6 +16,7 @@ const lastDay = (y: number, m: number) => pad(new Date(y, m, 0).getDate());
 
 export default function UnifiedFilter({ refreshPage = false, refreshFull = true }: Props) {
   const dispatch = useDispatch<any>();
+  const storeFilters = useSelector((s: RootState) => s.transactions.filters);
 
   const today = new Date();
   const curY = String(today.getFullYear());
@@ -28,43 +30,74 @@ export default function UnifiedFilter({ refreshPage = false, refreshFull = true 
   const [type, setType] = useState('');
   const [category, setCategory] = useState('');
 
+  // Initialize local UI from Redux filters once (on mount), so switching pages preserves selections.
+  useEffect(() => {
+    if (storeFilters.from && storeFilters.to) {
+      const f = storeFilters.from; const t = storeFilters.to;
+      if (f.slice(0,7) === t.slice(0,7)) {
+        setMode('month'); setMonth(f.slice(0,7));
+      } else if (f.endsWith('-01-01') && t.endsWith('-12-31') && f.slice(0,4) === t.slice(0,4)) {
+        setMode('year'); setYear(f.slice(0,4));
+      } else {
+        setMode('custom'); setFrom(f); setTo(t);
+      }
+    }
+    if (storeFilters.type) setType(storeFilters.type);
+    if (storeFilters.category) setCategory(storeFilters.category);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const idM = useId(), idY = useId(), idC = useId();
 
-  const emit = (ov: Partial<{
-    mode: Mode; month: string; year: string; from: string; to: string; type: string; category: string;
-  }>) => {
-    const next = { mode, month, year, from, to, type, category, ...ov };
+  /**
+   * Emit next filters by MERGING with current Redux filters.
+   * Only override keys that were actually passed in (avoid wiping type/category on date-only changes).
+   */
+  const emit = (ov: Partial<{ mode: Mode; month: string; year: string; from: string; to: string; type: string; category: string; }>) => {
+    const nextMode = ov.mode ?? mode;
+    const nextMonth = ov.month ?? month;
+    const nextYear = ov.year ?? year;
+    const nextFromRaw = ov.from ?? from;
+    const nextToRaw = ov.to ?? to;
 
-    let F = next.from, T = next.to;
-    if (next.mode === 'month' && /^\d{4}-\d{2}$/.test(next.month)) {
-      const [y, m] = next.month.split('-').map(Number);
-      F = `${next.month}-01`;
-      T = `${y}-${pad(m)}-${lastDay(y, m)}`;
-    } else if (next.mode === 'year' && /^\d{4}$/.test(next.year)) {
-      F = `${next.year}-01-01`;
-      T = `${next.year}-12-31`;
+    // Start from store filters to preserve fields not explicitly changed
+    const merged: any = { ...storeFilters };
+
+    // Compute final from/to based on effective mode/month/year
+    if (nextMode === 'month' && /^\d{4}-\d{2}$/.test(nextMonth)) {
+      const [y, m] = nextMonth.split('-').map(Number);
+      merged.from = `${nextMonth}-01`;
+      merged.to = `${y}-${pad(m)}-${lastDay(y, m)}`;
+    } else if (nextMode === 'year' && /^\d{4}$/.test(nextYear)) {
+      merged.from = `${nextYear}-01-01`;
+      merged.to = `${nextYear}-12-31`;
+    } else {
+      // custom: keep provided or existing
+      if (ov.from !== undefined) merged.from = nextFromRaw;
+      if (ov.to !== undefined) merged.to = nextToRaw;
     }
 
-    dispatch(setSliceFilters({
-      from: F || undefined,
-      to: T || undefined,
-      type: (next.type || undefined) as any,
-      category: next.category || undefined,
-    }));
+    // Only override type/category if provided in this change
+    if (ov.type !== undefined) merged.type = ov.type || undefined;
+    if (ov.category !== undefined) merged.category = ov.category || undefined;
+
+    dispatch(setSliceFilters(merged));
     if (refreshPage) dispatch(fetchPage());
     if (refreshFull) dispatch(fetchFull());
   };
 
   return (
-    <div className="uf-container card">
-      <h3>Filters</h3>
+    <div className="uf card">
+      {/* Row 1: time filters */}
       <div className="uf-row uf-time">
-        <input
-          id={idM} type="radio" name="mode"
-          checked={mode === 'month'}
-          onChange={() => { setMode('month'); emit({ mode: 'month' }); }}
-        />
-        <label>Month</label>
+        <label className="uf-radio">
+          <input
+            id={idM} type="radio" name="mode"
+            checked={mode === 'month'}
+            onChange={() => { setMode('month'); emit({ mode: 'month' }); }}
+          />
+          <span>Month</span>
+        </label>
         <input
           className="uf-input"
           type="month"
@@ -89,13 +122,14 @@ export default function UnifiedFilter({ refreshPage = false, refreshFull = true 
             setYear(v); setMode('year'); emit({ mode: 'year', year: v });
           }}
         />
+
         <label className="uf-radio">
           <input
             id={idC} type="radio" name="mode"
             checked={mode === 'custom'}
             onChange={() => { setMode('custom'); emit({ mode: 'custom' }); }}
           />
-          <label>Custom</label>
+          <span>Custom</span>
         </label>
         <input
           className="uf-input"

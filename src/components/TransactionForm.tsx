@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import DatePicker from './DatePicker'
 import { isNumeric } from '../utils/validation'
 import { CATEGORY_OPTIONS } from '../constants.ts'
 
@@ -35,7 +34,6 @@ export default function TransactionForm({ onSubmit, initial = {}, submitLabel = 
 
   return (
     <form className="grid" onSubmit={submit} style={{ gridTemplateColumns: 'repeat(6,1fr)', alignItems: 'end' }}>
-      <DatePicker value={date} onChange={setDate} />
       <div>
         <label style={{ display: 'block', fontSize: 12, color: '#475569' }}>Type</label>
         <select value={type} onChange={e => setType(e.target.value as any)}>
