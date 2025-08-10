@@ -1,5 +1,6 @@
 import Pagination from './Pagination'
 import { Tx } from '../features/transactions/transactionsSlice'
+import UnifiedFilter from '../components/UnifiedFilter';
 
 type Props = {
   items: Tx[]

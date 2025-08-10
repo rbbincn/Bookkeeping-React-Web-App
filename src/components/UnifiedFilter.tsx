@@ -56,7 +56,7 @@ export default function UnifiedFilter({ refreshPage = false, refreshFull = true 
   };
 
   return (
-    <div className="uf-container">
+    <div className="uf-container card">
       <h3>Filters</h3>
       <div className="uf-row uf-time">
         <input

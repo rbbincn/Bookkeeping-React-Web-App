@@ -36,15 +36,12 @@ export default function Transactions() {
 
   return (
     <div className="grid" style={{ gridTemplateColumns: '1fr', gap: '1rem' }}>
+      <UnifiedFilter refreshPage refreshFull />
       <div className="card">
         <h3>Add Transaction</h3>
         <TransactionForm onSubmit={(tx) => dispatch(createTransaction(tx))} />
       </div>
-
-      <UnifiedFilter refreshPage refreshFull />
-
-      {errorPage && <div className="card" style={{ color: '#ef4444' }}>Error: {errorPage}</div>}
-
+      {errorPage && <div style={{ color: '#ef4444' }}>Error: {errorPage}</div>}
       <TransactionTable
         items={items}
         page={page}
