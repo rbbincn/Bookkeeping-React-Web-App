@@ -25,4 +25,7 @@ yarn-error.log*
 # Coverage reports
 coverage/
 
-# Misc
+# Cypress
+cypress/screenshots
+cypress/fixtures
+cypress/support
