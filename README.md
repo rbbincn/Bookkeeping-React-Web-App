@@ -20,16 +20,26 @@ This is a Bookkeeping React application.
 - Tests: Jest unit tests and Cypress E2E
 - Containerization: multi-stage Dockerfile
 
-## Project Structure
+## Folder Structure
 
-- `src/`: Contains the source code for the application.
-  - `main.tsx`: Entry point of the application.
-  - `components/`: Contains React components.
-    - `Pagination` built from scratch.
-    - `TransactionForm`, `TransactionTable` is handcrafted (no third-party UI libraries).
-- `index.html`: Main HTML file for the application.
-- `tsconfig.json`: TypeScript configuration file.
-- `package.json`: npm configuration file.
+```
+.
+├── src/
+│   ├── components/       # Reusable components (e.g., UnifiedFilter, Pagination)
+│   │   └── Pagination/   # built from scratch
+│   │   └── TransactionForm   # handcrafted (no third-party UI libraries)
+│   │   └── TransactionTable  # handcrafted (no third-party UI libraries)
+│   ├── features/
+│   │   └── transactions/ # Redux slice + thunks for transactions
+│   ├── pages/            # Page-level components (Dashboard, Transactions)
+│   ├── App.tsx
+│   └── main.tsx          # Entry point of the application.
+├── server/               # API routes
+├── cypress/              # E2E tests
+├── vite.config.ts
+├── package.json          # npm configuration file
+└── README.md
+```
 
 ## Setup Instructions
 
@@ -90,8 +100,7 @@ npm test -- --coverage
 
 Located in `cypress/e2e/`, covering:
 
-- **Add / Delete / Edit**: End-to-end flows for creating, deleting, and editing transactions.
-- **Filtering**: By **Category Type** with assertions ensuring results match the filter criteria.
+- **CRUD**: End-to-end flows for creating, deleting, editing and query transactions.
 - **Pagination**: Navigation controls update the page and display the correct data.
 - **Stability**: To avoid intermittent failures from the mock API’s 8% random network error, tests stub `Math.random` for deterministic behavior.
 
@@ -111,9 +120,19 @@ docker build -t bookkeeping-app
 docker run -p 8080:8080 --name bookkeeping bookkeeping-app
 ```
 
-## Performance & Deployment Notes
-- **CDN**: Static assets in `dist/assets` are cached via Vercel’s built-in global CDN with long-term immutable caching (Cache-Control: public, max-age=31536000, immutable).
-- **Deployment**: using vercel binding github
+
+## Deployment
+- Hosted on **Vercel**.
+- Static frontend is served via Vercel's CDN.
+- API endpoints are served from the `/server` directory.
+
+## Tech Stack
+
+- **Frontend:** React 18, TypeScript, Vite
+- **State Management:** Redux Toolkit
+- **Styling:** CSS Modules / Utility classes
+- **Testing:** Jest, React Testing Library, Cypress
+- **Deployment:** Vercel (with CDN)
 
 ## Live URL
 - https://bookkeeping-web-app.vercel.app/
