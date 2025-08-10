@@ -1,22 +1,28 @@
-import React from 'react'
-
 type Props = {
-  current: number
+  page: number
   pageSize: number
   total: number
-  onChange: (p: number) => void
+  onChange: (page: number) => void
 }
-
-export default function Pagination({ current, pageSize, total, onChange }: Props) {
+export default function Pagination({ page, pageSize, total, onChange }: Props) {
   const pages = Math.max(1, Math.ceil(total / pageSize))
-  const arr = Array.from({length: pages}, (_,i) => i+1)
+  const go = (p: number) => onChange(Math.min(Math.max(1, p), pages))
+  const items = []
+  for (let i = 1; i <= pages; i++) {
+    if (i === 1 || i === pages || Math.abs(i - page) <= 1) {
+      items.push(i)
+    } else if (items[items.length - 1] !== -1) {
+      items.push(-1)
+    }
+  }
   return (
-    <div className="pagination" role="navigation" aria-label="pagination">
-      {arr.map(p => (
-        <button key={p} className={`page-btn ${p===current? 'active':''}`} onClick={()=>onChange(p)} aria-current={p===current}>
-          {p}
-        </button>
-      ))}
+    <div className="row" aria-label="pagination">
+      <button className="btn ghost" onClick={() => go(page - 1)} disabled={page <= 1}>Prev</button>
+      {items.map((i, idx) => i === -1 ? <span key={idx}>…</span> :
+        <button key={idx} className={'btn ' + (i === page ? '' : 'ghost')} onClick={() => go(i)}>{i}</button>
+      )}
+      <button className="btn ghost" onClick={() => go(page + 1)} disabled={page >= pages}>Next</button>
+      <span className="pill">Total: {total}</span>
     </div>
   )
 }

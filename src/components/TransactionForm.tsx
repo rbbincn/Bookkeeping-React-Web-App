@@ -1,44 +1,57 @@
-import React, { useState } from 'react'
-import { Transaction } from '../mockApi'
+import { useState } from 'react'
+import DatePicker from './DatePicker'
+import { isNumeric } from '../utils/validation'
 
 type Props = {
-  onSubmit: (t: Omit<Transaction,'id'>) => Promise<void> | void
+  onSubmit: (data: { date: string, type: 'Income' | 'Expense', category: string, amount: number, notes?: string }) => void
+  initial?: Partial<{ date: string, type: 'Income' | 'Expense', category: string, amount: number, notes?: string }>
+  submitLabel?: string
 }
+export default function TransactionForm({ onSubmit, initial = {}, submitLabel = 'Add' }: Props) {
+  const [date, setDate] = useState(initial.date || new Date().toISOString().slice(0, 10))
+  const [type, setType] = useState<'Income' | 'Expense'>(initial.type || 'Expense')
+  const [category, setCategory] = useState(initial.category || 'Food')
+  const [amount, setAmount] = useState(String(initial.amount ?? ''))
+  const [notes, setNotes] = useState(initial.notes || '')
+  const [err, setErr] = useState<string | undefined>()
 
-export default function TransactionForm({ onSubmit }: Props) {
-  const [date, setDate] = useState('')
-  const [type, setType] = useState<'Income'|'Expense'>('Expense')
-  const [category, setCategory] = useState('Food')
-  const [amount, setAmount] = useState<number | ''>('')
-  const [notes, setNotes] = useState('')
-
-  async function submit(e: React.FormEvent) {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!date || amount === '') {
-      alert('Please fill required fields: date and amount')
-      return
-    }
-    await onSubmit({ date, type, category, amount: Number(amount), notes })
-    // reset minimally
-    setDate('')
-    setAmount('')
-    setNotes('')
+    if (!date) return setErr('Date is required')
+    if (!isNumeric(amount)) return setErr('Amount must be numeric')
+    onSubmit({ date, type, category, amount: Number(amount), notes: notes || undefined })
+    setErr(undefined)
   }
 
+  const cats = ['Food', 'Transport', 'Rent', 'Salary', 'Entertainment', 'Shopping', 'Other']
+
   return (
-    <form onSubmit={submit} aria-label="transaction-form">
-      <div className="form-row">
-        <input type="date" value={date} onChange={e=>setDate(e.target.value)} required />
-        <select value={type} onChange={e=>setType(e.target.value as any)}>
-          <option>Expense</option>
+    <form className="grid" onSubmit={submit} style={{ gridTemplateColumns: 'repeat(6,1fr)', alignItems: 'end' }}>
+      <DatePicker value={date} onChange={setDate} />
+      <div>
+        <label style={{ display: 'block', fontSize: 12, color: '#475569' }}>Type</label>
+        <select value={type} onChange={e => setType(e.target.value as any)}>
           <option>Income</option>
+          <option>Expense</option>
         </select>
-        <input placeholder="Category" value={category} onChange={e=>setCategory(e.target.value)} />
-        <input placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value === '' ? '' : Number(e.target.value))} type="number" required />
-        <button type="submit">Add</button>
       </div>
-      <div style={{marginTop:8}}>
-        <textarea placeholder="Notes (optional)" value={notes} onChange={e=>setNotes(e.target.value)} />
+      <div>
+        <label style={{ display: 'block', fontSize: 12, color: '#475569' }}>Category</label>
+        <select value={category} onChange={e => setCategory(e.target.value)}>
+          {cats.map(c => <option key={c}>{c}</option>)}
+        </select>
+      </div>
+      <div>
+        <label style={{ display: 'block', fontSize: 12, color: '#475569' }}>Amount</label>
+        <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
+      </div>
+      <div>
+        <label style={{ display: 'block', fontSize: 12, color: '#475569' }}>Notes</label>
+        <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional" />
+      </div>
+      <div>
+        <button className="btn" type="submit">{submitLabel}</button>
+        {err && <div style={{ color: '#ef4444', marginTop: 6 }}>{err}</div>}
       </div>
     </form>
   )
