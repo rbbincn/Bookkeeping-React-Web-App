@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import DatePicker from './DatePicker'
 import { isNumeric } from '../utils/validation'
+import { CATEGORY_OPTIONS } from '../constants.ts'
 
 // helper to get local YYYY-MM-DD
 function toLocalISODate(d: Date) {
@@ -45,7 +46,7 @@ export default function TransactionForm({ onSubmit, initial = {}, submitLabel = 
       <div>
         <label style={{ display: 'block', fontSize: 12, color: '#475569' }}>Category</label>
         <select value={category} onChange={e => setCategory(e.target.value)}>
-          {cats.map(c => <option key={c}>{c}</option>)}
+          {CATEGORY_OPTIONS.map(c => <option key={c}>{c}</option>)}
         </select>
       </div>
       <div>

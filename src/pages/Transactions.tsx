@@ -22,7 +22,7 @@ export default function Transactions() {
   // redux state
   const items = useSelector(selectPageItems);
   const total = useSelector(selectTotalCount);
-  const { page, pageSize, loadingPage, errorPage } = useSelector((s: RootState) => s.transactions);
+  const { page, pageSize, errorPage } = useSelector((s: RootState) => s.transactions);
   const filters = useSelector(selectFilters);
 
   // initial page load
