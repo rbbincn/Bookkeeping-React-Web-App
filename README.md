@@ -82,8 +82,8 @@ Located in `src/__tests__/`, covering:
 - **Redux Slice Logic (sync + async)**  
   - `transactionsSlice.test.ts`: `setFilters` updates filter state & pagination.
   - `transactionsSlice.async.test.ts`: `fetchList`, `createTx` (Create), `updateTx` (Update), `deleteTx` (Delete) — with mocked API, asserting `loading/error` and list refresh.
+  - `transactionsSlice.thunk.test.ts`
 - **Custom Components**  
-  - `pagination.test.tsx`: Pagination interactions (Prev/Next, page changes).  
   - `TransactionForm.test.tsx`: Form validation (numeric amount), successful submit callback.  
   - `TransactionTable.test.tsx`: Edit/Delete callbacks, empty state rendering.
 - **Utility Functions**  
