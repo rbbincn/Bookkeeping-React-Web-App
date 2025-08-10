@@ -163,6 +163,7 @@ export default function UnifiedFilter({ refreshPage = false, refreshFull = true 
         <div className="uf-field">
           <label>Category</label>
           <select value={category} onChange={(e) => { const v = e.target.value; setCategory(v); emit({ category: v }); }}>
+            <option value="">All</option>
             {CATEGORY_OPTIONS.map(c => <option key={c}>{c}</option>)}
           </select>
         </div>

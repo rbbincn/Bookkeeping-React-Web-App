@@ -12,9 +12,8 @@ function toLocalISODate(d: Date) {
 type Props = {
   onSubmit: (data: { date: string, type: 'Income' | 'Expense', category: string, amount: number, notes?: string }) => void
   initial?: Partial<{ date: string, type: 'Income' | 'Expense', category: string, amount: number, notes?: string }>
-  submitLabel?: string
 }
-export default function TransactionForm({ onSubmit, initial = {}, submitLabel = 'Add' }: Props) {
+export default function TransactionForm({ onSubmit, initial = {}}: Props) {
   const [date, setDate] = useState(initial.date || toLocalISODate(new Date()))
   const [type, setType] = useState<'Income' | 'Expense'>(initial.type || 'Expense')
   const [category, setCategory] = useState(initial.category || 'Food')
@@ -29,8 +28,6 @@ export default function TransactionForm({ onSubmit, initial = {}, submitLabel = 
     onSubmit({ date, type, category, amount: Number(amount), notes: notes || undefined })
     setErr(undefined)
   }
-
-  const cats = ['Food', 'Transport', 'Rent', 'Salary', 'Entertainment', 'Shopping', 'Other']
 
   return (
     <form className="grid" onSubmit={submit} style={{ gridTemplateColumns: 'repeat(6,1fr)', alignItems: 'end' }}>
@@ -49,14 +46,14 @@ export default function TransactionForm({ onSubmit, initial = {}, submitLabel = 
       </div>
       <div>
         <label style={{ display: 'block', fontSize: 12, color: '#475569' }}>Amount</label>
-        <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
+        <input type='number' value={amount} onChange={e => setAmount(e.target.value)} placeholder="0.00" />
       </div>
       <div>
         <label style={{ display: 'block', fontSize: 12, color: '#475569' }}>Notes</label>
         <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional" />
       </div>
       <div>
-        <button className="btn" type="submit">{submitLabel}</button>
+        <button className="btn" type="submit">Add</button>
         {err && <div style={{ color: '#ef4444', marginTop: 6 }}>{err}</div>}
       </div>
     </form>

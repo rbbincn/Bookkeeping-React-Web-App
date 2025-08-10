@@ -1,53 +1,97 @@
 // src/api/mockApi.ts
+// Fixed, richer mock data:
+// - 2024-01 ~ 2025-12, four transactions per month
+// - Deterministic pseudo-random categories/amounts
+// - Always returned in DESC (newest-first) order
 
-import { Transaction, Filters } from '../features/transactions/transactionsSlice';
 import { v4 as uuidv4 } from 'uuid';
 
-// 固定数据：2024-01 ~ 2025-12，每月一条（Income/Expense交替）
-export const transactions: Transaction[] = (() => {
-  const data: Transaction[] = [];
-  const categories = ['Salary', 'Food'];
-  let toggle = true;
-  for (let year = 2024; year <= 2025; year++) {
-    for (let month = 1; month <= 12; month++) {
-      data.push({
+export type Tx = {
+  id: string;
+  date: string;
+  type: 'Income' | 'Expense';
+  category: string;
+  amount: number;
+  notes?: string;
+};
+
+export type Filters = {
+  from?: string;
+  to?: string;
+  type?: 'Income' | 'Expense';
+  category?: string;
+};
+
+// Local categories (keep in sync with your UI options if needed)
+const CATEGORIES = [
+  'Salary', 'Food', 'Transport', 'Rent', 'Entertainment',
+  'Shopping', 'Utilities', 'Healthcare', 'Education', 'Other'
+];
+
+// Simple deterministic PRNG so tests stay stable
+function prng(seed: number) {
+  let x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+function pickCategory(y: number, m: number, k: number) {
+  const idx = Math.floor(prng(y * 100 + m * 10 + k) * CATEGORIES.length);
+  return CATEGORIES[idx];
+}
+function pickAmount(y: number, m: number, k: number, type: 'Income' | 'Expense') {
+  const r = prng((y + 1) * 100 + (m + 3) * 10 + (k + 7));
+  if (type === 'Income') {
+    // 3000 ~ 7000
+    return Math.round((3000 + r * 4000) * 100) / 100;
+  } else {
+    // 20 ~ 400
+    return Math.round((20 + r * 380) * 100) / 100;
+  }
+}
+
+// Build 2025 -> 2024 (then we still sort, to be safe)
+const transactions: Tx[] = [];
+const DAYS = [26, 19, 12, 5]; // 4 per month, spaced
+for (let year = 2025; year >= 2024; year--) {
+  for (let month = 12; month >= 1; month--) {
+    for (let i = 0; i < 4; i++) {
+      const day = DAYS[i];
+      const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const type: 'Income' | 'Expense' = (i % 2 === 0) ? 'Income' : 'Expense';
+      const category = pickCategory(year, month, i);
+      const amount = pickAmount(year, month, i, type);
+      transactions.push({
         id: uuidv4(),
-        date: `${year}-${String(month).padStart(2, '0')}-15`,
-        type: toggle ? 'Income' : 'Expense',
-        category: toggle ? categories[0] : categories[1],
-        amount: toggle ? 5000 : 200,
-        notes: toggle ? 'Monthly salary' : 'Dining out',
+        date,
+        type,
+        category,
+        amount,
+        notes: type === 'Income' ? 'Auto income record' : 'Auto expense record',
       });
-      toggle = !toggle;
     }
   }
-  return data;
-})();
+}
 
-// 模拟延迟
+// Simulated delay
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-// 过滤函数
-function applyFilters(list: Transaction[], filters?: Filters) {
+// Core filter
+function applyFilters(list: Tx[], filters?: Filters) {
   let result = [...list];
-  if (filters?.from) {
-    result = result.filter(t => t.date >= filters.from!);
-  }
-  if (filters?.to) {
-    result = result.filter(t => t.date <= filters.to!);
-  }
-  if (filters?.type) {
-    result = result.filter(t => t.type === filters.type);
-  }
+  if (filters?.from) result = result.filter(t => t.date >= filters.from!);
+  if (filters?.to) result = result.filter(t => t.date <= filters.to!);
+  if (filters?.type) result = result.filter(t => t.type === filters.type);
   if (filters?.category) {
-    result = result.filter(t => t.category.toLowerCase().includes(filters.category.toLowerCase()));
+    const q = filters.category.toLowerCase();
+    result = result.filter(t => t.category.toLowerCase().includes(q));
   }
+  // Always DESC by date (newest first)
+  result.sort((a, b) => b.date.localeCompare(a.date));
   return result;
 }
 
-// 分页查询
+// Paginated list
 export async function list(params: Filters & { page: number; pageSize: number }) {
-  await delay(300);
+  await delay(200);
   const filtered = applyFilters(transactions, params);
   const start = (params.page - 1) * params.pageSize;
   const end = start + params.pageSize;
@@ -57,30 +101,30 @@ export async function list(params: Filters & { page: number; pageSize: number })
   };
 }
 
-// 全量查询（Dashboard）
+// Unpaginated list (Dashboard totals / charts)
 export async function listAll(filters?: Filters) {
-  await delay(200);
+  await delay(150);
   return applyFilters(transactions, filters);
 }
 
-// CRUD
-export async function create(tx: Omit<Transaction, 'id'>) {
-  await delay(200);
-  transactions.push({ ...tx, id: uuidv4() });
+// CRUD operations (mutate in-memory data)
+export async function create(tx: Omit<Tx, 'id'>) {
+  await delay(120);
+  const record: Tx = { ...tx, id: uuidv4() };
+  transactions.push(record);
 }
 
-export async function update(id: string, patch: Partial<Omit<Transaction, 'id'>>) {
-  await delay(200);
+export async function update(id: string, patch: Partial<Omit<Tx, 'id'>>) {
+  await delay(120);
   const idx = transactions.findIndex(t => t.id === id);
-  if (idx >= 0) {
-    transactions[idx] = { ...transactions[idx], ...patch };
-  }
+  if (idx >= 0) transactions[idx] = { ...transactions[idx], ...patch };
 }
 
 export async function remove(id: string) {
-  await delay(200);
+  await delay(120);
   const idx = transactions.findIndex(t => t.id === id);
-  if (idx >= 0) {
-    transactions.splice(idx, 1);
-  }
+  if (idx >= 0) transactions.splice(idx, 1);
 }
+
+// (optional) export data for debugging
+export function __data() { return [...transactions].sort((a, b) => b.date.localeCompare(a.date)); }

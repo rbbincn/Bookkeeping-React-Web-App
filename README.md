@@ -16,7 +16,7 @@ This is a Bookkeeping React application.
 - Filters: by date range, type, and category
 - History & Analytics: monthly summary, totals, and a bar chart (Chart.js)
 - Mock backend: localStorage + artificial latency and random error injection
-- Custom reusable components: `Pagination`, `TransactionForm` (no third‑party UI libs)
+- Custom reusable components: `Pagination`, `TransactionTable` (no third‑party UI libs)
 - Tests: Jest unit tests and Cypress E2E
 - Containerization: multi-stage Dockerfile
 
