@@ -1,5 +1,7 @@
 # Bookkeeping Web App
 
+https://bookkeeping-web-app.vercel.app/
+
 This is a Bookkeeping React application.
 - React + TypeScript + Vite frontend, Redux Toolkit for state, Chart.js for analytics,
 - Mock frontend backend (simulates latency)
@@ -16,7 +18,6 @@ This is a Bookkeeping React application.
 - Mock backend: localStorage + artificial latency and random error injection
 - Custom reusable components: `DatePicker`, `Pagination`, `TransactionForm` (no third‑party UI libs)
 - Tests: Jest unit tests and Cypress E2E
-- Deployment: Express serves static `dist` with proper SPA fallback for history mode
 - Containerization: multi-stage Dockerfile
 
 ## Project Structure
@@ -42,21 +43,21 @@ This is a Bookkeeping React application.
    npm install
    ```
 
-## Getting Started (Local)
+### 3. Getting Started (Local)
 ```bash
 npm install
 npm run dev
 # open http://localhost:5173
 ```
 
-## Build & Serve (Production-like)
+### 4. Build & Serve (Production-like)
 ```bash
 npm run build
 npm start
 # open http://localhost:8080
 ```
 
-The Express server:
+### 5. The Express server:
 - Serves `/dist` with long-term caching for static assets.
 - Sends `index.html` as a fallback for all non-file GETs, supporting client-side routing (history mode).
 
@@ -112,3 +113,7 @@ docker run -p 8080:8080 --name bookkeeping bookkeeping-app
 
 ## Performance & Deployment Notes
 - **CDN**: Static assets in `dist/assets` are cached via Vercel’s built-in global CDN with long-term immutable caching (Cache-Control: public, max-age=31536000, immutable).
+- **Deployment**: using vercel binding github
+
+## Live URL
+- https://bookkeeping-web-app.vercel.app/

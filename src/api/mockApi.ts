@@ -1,94 +1,86 @@
-export type Transaction = {
-  id: string
-  date: string // ISO
-  type: 'Income' | 'Expense'
-  category: string
-  amount: number
-  notes?: string
-}
+// src/api/mockApi.ts
 
-type Query = {
-  from?: string
-  to?: string
-  type?: 'Income' | 'Expense'
-  category?: string
-  page?: number
-  pageSize?: number
-}
+import { Transaction, Filters } from '../features/transactions/transactionsSlice';
+import { v4 as uuidv4 } from 'uuid';
 
-const KEY = 'bk.transactions.v1'
-
-const delay = (min=200, max=700) => new Promise(res => setTimeout(res, Math.random()*(max-min)+min))
-const maybeError = () => {
-  // 8% chance to throw a network-like error
-  if (Math.random() < 0.08) throw new Error('Network error: simulated failure')
-}
-
-function readAll(): Transaction[] {
-  const raw = localStorage.getItem(KEY)
-  if (!raw) return []
-  try { return JSON.parse(raw) as Transaction[] } catch { return [] }
-}
-
-function writeAll(list: Transaction[]) {
-  localStorage.setItem(KEY, JSON.stringify(list))
-}
-
-export async function create(tx: Omit<Transaction, 'id'>): Promise<Transaction> {
-  await delay(); maybeError()
-  const list = readAll()
-  const item = { ...tx, id: crypto.randomUUID() }
-  list.unshift(item)
-  writeAll(list)
-  return item
-}
-
-export async function update(id: string, patch: Partial<Omit<Transaction, 'id'>>): Promise<Transaction> {
-  await delay(); maybeError()
-  const list = readAll()
-  const idx = list.findIndex(t => t.id === id)
-  if (idx === -1) throw new Error('Not found')
-  list[idx] = { ...list[idx], ...patch }
-  writeAll(list)
-  return list[idx]
-}
-
-export async function remove(id: string): Promise<void> {
-  await delay(); maybeError()
-  writeAll(readAll().filter(t => t.id !== id))
-}
-
-export async function list(q: Query): Promise<{items: Transaction[], total: number}> {
-  await delay(); maybeError()
-  const { from, to, type, category, page=1, pageSize=10 } = q
-  let items = readAll()
-  if (from) items = items.filter(t => t.date >= from)
-  if (to) items = items.filter(t => t.date <= to)
-  if (type) items = items.filter(t => t.type === type)
-  if (category) items = items.filter(t => t.category === category)
-  const total = items.length
-  const start = (page-1)*pageSize
-  const paged = items.slice(start, start+pageSize)
-  return { items: paged, total }
-}
-
-// Seed with demo data if empty
-export function seedDemo() {
-  if (readAll().length) return
-  const categories = ['Food','Transport','Rent','Salary','Entertainment','Shopping']
-  const now = new Date()
-  const demo = Array.from({length: 36}).map((_,i) => {
-    const d = new Date(now)
-    d.setDate(now.getDate() - i*2)
-    const isIncome = Math.random() > 0.7
-    return {
-      id: crypto.randomUUID(),
-      date: d.toISOString().slice(0,10),
-      type: isIncome ? 'Income' : 'Expense',
-      category: isIncome ? 'Salary' : categories[Math.floor(Math.random()*categories.length)],
-      amount: +(isIncome ? (1000+Math.random()*2000) : (5+Math.random()*80)).toFixed(2),
-      notes: isIncome ? 'Monthly pay' : ''
+// 固定数据：2024-01 ~ 2025-12，每月一条（Income/Expense交替）
+export const transactions: Transaction[] = (() => {
+  const data: Transaction[] = [];
+  const categories = ['Salary', 'Food'];
+  let toggle = true;
+  for (let year = 2024; year <= 2025; year++) {
+    for (let month = 1; month <= 12; month++) {
+      data.push({
+        id: uuidv4(),
+        date: `${year}-${String(month).padStart(2, '0')}-15`,
+        type: toggle ? 'Income' : 'Expense',
+        category: toggle ? categories[0] : categories[1],
+        amount: toggle ? 5000 : 200,
+        notes: toggle ? 'Monthly salary' : 'Dining out',
+      });
+      toggle = !toggle;
     }
-  })
-  writeAll(demo)
+  }
+  return data;
+})();
+
+// 模拟延迟
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+// 过滤函数
+function applyFilters(list: Transaction[], filters?: Filters) {
+  let result = [...list];
+  if (filters?.from) {
+    result = result.filter(t => t.date >= filters.from!);
+  }
+  if (filters?.to) {
+    result = result.filter(t => t.date <= filters.to!);
+  }
+  if (filters?.type) {
+    result = result.filter(t => t.type === filters.type);
+  }
+  if (filters?.category) {
+    result = result.filter(t => t.category.toLowerCase().includes(filters.category.toLowerCase()));
+  }
+  return result;
+}
+
+// 分页查询
+export async function list(params: Filters & { page: number; pageSize: number }) {
+  await delay(300);
+  const filtered = applyFilters(transactions, params);
+  const start = (params.page - 1) * params.pageSize;
+  const end = start + params.pageSize;
+  return {
+    items: filtered.slice(start, end),
+    total: filtered.length,
+  };
+}
+
+// 全量查询（Dashboard）
+export async function listAll(filters?: Filters) {
+  await delay(200);
+  return applyFilters(transactions, filters);
+}
+
+// CRUD
+export async function create(tx: Omit<Transaction, 'id'>) {
+  await delay(200);
+  transactions.push({ ...tx, id: uuidv4() });
+}
+
+export async function update(id: string, patch: Partial<Omit<Transaction, 'id'>>) {
+  await delay(200);
+  const idx = transactions.findIndex(t => t.id === id);
+  if (idx >= 0) {
+    transactions[idx] = { ...transactions[idx], ...patch };
+  }
+}
+
+export async function remove(id: string) {
+  await delay(200);
+  const idx = transactions.findIndex(t => t.id === id);
+  if (idx >= 0) {
+    transactions.splice(idx, 1);
+  }
 }

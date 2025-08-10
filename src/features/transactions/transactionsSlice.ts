@@ -1,73 +1,200 @@
-import { createAsyncThunk, createSlice, nanoid, PayloadAction } from '@reduxjs/toolkit'
-import * as api from '../../api/mockApi'
+// src/features/transactions/transactionsSlice.ts
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import * as api from '../../api/mockApi';
 
-export type Tx = api.Transaction
+export type Transaction = {
+  id: string;
+  date: string; // YYYY-MM-DD
+  type: 'Income' | 'Expense';
+  category: string;
+  amount: number;
+  notes?: string;
+};
+
 export type Filters = {
-  from?: string
-  to?: string
-  type?: 'Income' | 'Expense'
-  category?: string
-  page: number
-  pageSize: number
+  from?: string;
+  to?: string;
+  type?: 'Income' | 'Expense';
+  category?: string;
+};
+
+export type Totals = {
+  income: number;
+  expense: number;
+  net: number;
+};
+
+export type TransactionsState = {
+  // 分页列表（Transactions 页面用）
+  pageItems: Transaction[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  filters: Filters;
+  loadingPage: boolean;
+  errorPage?: string;
+
+  // 全量数据（Dashboard 用）
+  fullItems: Transaction[] | null;
+  totals: Totals;
+  loadingFull: boolean;
+  errorFull?: string;
+};
+
+const initialState: TransactionsState = {
+  pageItems: [],
+  totalCount: 0,
+  page: 1,
+  pageSize: 10,
+  filters: {},
+
+  loadingPage: false,
+  errorPage: undefined,
+
+  fullItems: null,
+  totals: { income: 0, expense: 0, net: 0 },
+  loadingFull: false,
+  errorFull: undefined,
+};
+
+function computeTotals(items: Transaction[]): Totals {
+  const income = items
+    .filter(t => t.type === 'Income')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const expense = items
+    .filter(t => t.type === 'Expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+  return { income, expense, net: income - expense };
 }
 
-export type State = {
-  items: Tx[]
-  total: number
-  loading: boolean
-  error?: string
-  filters: Filters
-}
+// --- Thunks ---
 
-const initialState: State = {
-  items: [], total: 0, loading: false, error: undefined,
-  filters: { page: 1, pageSize: 10 }
-}
+// 分页数据
+export const fetchPage = createAsyncThunk<
+  { items: Transaction[]; total: number },
+  void,
+  { state: { transactions: TransactionsState } }
+>('transactions/fetchPage', async (_, { getState }) => {
+  const s = getState().transactions;
+  return api.list({
+    ...s.filters,
+    page: s.page,
+    pageSize: s.pageSize,
+  });
+});
 
-export const fetchList = createAsyncThunk('tx/list', async (_, { getState }) => {
-  const s = getState() as any
-  const q = s.transactions.filters
-  const res = await api.list(q)
-  return res
-})
+// 全量数据
+export const fetchFull = createAsyncThunk<
+  { items: Transaction[]; totals: Totals },
+  void,
+  { state: { transactions: TransactionsState } }
+>('transactions/fetchFull', async (_, { getState }) => {
+  const s = getState().transactions;
+  const items = await api.listAll(s.filters);
+  return { items, totals: computeTotals(items) };
+});
 
-export const createTx = createAsyncThunk('tx/create', async (tx: Omit<Tx, 'id'>, { dispatch }) => {
-  const res = await api.create(tx)
-  await dispatch(fetchList())
-  return res
-})
+// 新增
+export const createTransaction = createAsyncThunk<
+  void,
+  Omit<Transaction, 'id'>
+>('transactions/createTransaction', async (payload, { dispatch }) => {
+  await api.create(payload);
+  await Promise.all([dispatch(fetchPage()), dispatch(fetchFull())]);
+});
 
-export const updateTx = createAsyncThunk('tx/update', async ({ id, patch }: { id: string, patch: Partial<Omit<Tx, 'id'>> }, { dispatch }) => {
-  const res = await api.update(id, patch)
-  await dispatch(fetchList())
-  return res
-})
+// 更新
+export const updateTransaction = createAsyncThunk<
+  void,
+  { id: string; patch: Partial<Omit<Transaction, 'id'>> }
+>('transactions/updateTransaction', async ({ id, patch }, { dispatch }) => {
+  await api.update(id, patch);
+  await Promise.all([dispatch(fetchPage()), dispatch(fetchFull())]);
+});
 
-export const deleteTx = createAsyncThunk('tx/delete', async (id: string, { dispatch }) => {
-  await api.remove(id)
-  await dispatch(fetchList())
-  return id
-})
+// 删除
+export const deleteTransaction = createAsyncThunk<void, string>(
+  'transactions/deleteTransaction',
+  async (id, { dispatch }) => {
+    await api.remove(id);
+    await Promise.all([dispatch(fetchPage()), dispatch(fetchFull())]);
+  }
+);
 
-const slice = createSlice({
+// --- Slice ---
+const transactionsSlice = createSlice({
   name: 'transactions',
   initialState,
   reducers: {
     setFilters(state, action: PayloadAction<Partial<Filters>>) {
-      state.filters = { ...state.filters, ...action.payload, page: action.payload.page ?? state.filters.page }
-    }
+      state.filters = { ...state.filters, ...action.payload };
+      state.page = 1;
+    },
+    setPage(state, action: PayloadAction<number>) {
+      state.page = action.payload;
+    },
+    setPageSize(state, action: PayloadAction<number>) {
+      state.pageSize = action.payload;
+      state.page = 1;
+    },
+    clearErrors(state) {
+      state.errorPage = undefined;
+      state.errorFull = undefined;
+    },
   },
   extraReducers: builder => {
     builder
-      .addCase(fetchList.pending, (s) => { s.loading = true; s.error = undefined })
-      .addCase(fetchList.fulfilled, (s, a) => { s.loading = false; s.items = a.payload.items; s.total = a.payload.total })
-      .addCase(fetchList.rejected, (s, a) => { s.loading = false; s.error = a.error.message })
-      .addMatcher((ac) => ac.type.startsWith('tx/') && ac.type.endsWith('/rejected'), (s, a) => { s.error = a.error.message })
-  }
-})
+      // fetchPage
+      .addCase(fetchPage.pending, state => {
+        state.loadingPage = true;
+        state.errorPage = undefined;
+      })
+      .addCase(fetchPage.fulfilled, (state, action) => {
+        state.loadingPage = false;
+        state.pageItems = action.payload.items;
+        state.totalCount = action.payload.total;
+      })
+      .addCase(fetchPage.rejected, (state, action) => {
+        state.loadingPage = false;
+        state.pageItems = [];
+        state.totalCount = 0;
+        state.errorPage = action.error.message || 'Failed to load page';
+      })
+      // fetchFull
+      .addCase(fetchFull.pending, state => {
+        state.loadingFull = true;
+        state.errorFull = undefined;
+      })
+      .addCase(fetchFull.fulfilled, (state, action) => {
+        state.loadingFull = false;
+        state.fullItems = action.payload.items;
+        state.totals = action.payload.totals;
+      })
+      .addCase(fetchFull.rejected, (state, action) => {
+        state.loadingFull = false;
+        state.fullItems = [];
+        state.totals = { income: 0, expense: 0, net: 0 };
+        state.errorFull = action.error.message || 'Failed to load totals';
+      });
+  },
+});
 
-export const { setFilters } = slice.actions
-export default slice.reducer
+export const { setFilters, setPage, setPageSize, clearErrors } = transactionsSlice.actions;
+export default transactionsSlice.reducer;
 
-// Initialize demo data on module load
-api.seedDemo()
+// Selectors
+export const selectPageItems = (s: any) => (s.transactions as TransactionsState).pageItems;
+export const selectTotalCount = (s: any) => (s.transactions as TransactionsState).totalCount;
+export const selectLoadingPage = (s: any) => (s.transactions as TransactionsState).loadingPage;
+export const selectPageError = (s: any) => (s.transactions as TransactionsState).errorPage;
+
+export const selectFullItems = (s: any) => (s.transactions as TransactionsState).fullItems;
+export const selectTotals = (s: any) => (s.transactions as TransactionsState).totals;
+export const selectLoadingFull = (s: any) => (s.transactions as TransactionsState).loadingFull;
+export const selectFullError = (s: any) => (s.transactions as TransactionsState).errorFull;
+
+export const selectFilters = (s: any) => (s.transactions as TransactionsState).filters;
+export const selectPageInfo = (s: any) => {
+  const t = s.transactions as TransactionsState;
+  return { page: t.page, pageSize: t.pageSize, total: t.totalCount };
+};

@@ -2,13 +2,20 @@ import { useState } from 'react'
 import DatePicker from './DatePicker'
 import { isNumeric } from '../utils/validation'
 
+// helper to get local YYYY-MM-DD
+function toLocalISODate(d: Date) {
+  const offset = d.getTimezoneOffset()
+  const local = new Date(d.getTime() - offset * 60000)
+  return local.toISOString().slice(0, 10)
+}
+
 type Props = {
   onSubmit: (data: { date: string, type: 'Income' | 'Expense', category: string, amount: number, notes?: string }) => void
   initial?: Partial<{ date: string, type: 'Income' | 'Expense', category: string, amount: number, notes?: string }>
   submitLabel?: string
 }
 export default function TransactionForm({ onSubmit, initial = {}, submitLabel = 'Add' }: Props) {
-  const [date, setDate] = useState(initial.date || new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(initial.date || toLocalISODate(new Date()))
   const [type, setType] = useState<'Income' | 'Expense'>(initial.type || 'Expense')
   const [category, setCategory] = useState(initial.category || 'Food')
   const [amount, setAmount] = useState(String(initial.amount ?? ''))
